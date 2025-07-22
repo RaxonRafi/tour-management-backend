@@ -14,7 +14,12 @@ const createTour = async (payload: ITour)=>{
     return tour;
 
 }
-
+const getSingleTour = async (slug: string) => {
+    const tour = await Tour.findOne({ slug });
+    return {
+        data: tour,
+    }
+};
 const getAllTours = async (query: Record<string, string>)=>{
     const queryBuilder = new QueryBuilder(Tour.find(),query)
     
@@ -63,6 +68,12 @@ const createTourType = async (payload: ITourType) => {
 const getAllTourTypes = async () => {
     return await TourType.find();
 };
+const getSingleTourType = async (id: string) => {
+    const tourType = await TourType.findById(id);
+    return {
+        data: tourType
+    };
+};
 const updateTourType = async (id: string, payload: ITourType) => {
     const existingTourType = await TourType.findById(id);
  
@@ -92,4 +103,6 @@ export const TourService = {
     getAllTours,
     updateTour,
     deleteTour,
+    getSingleTourType,
+    getSingleTour
 };

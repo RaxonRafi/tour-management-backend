@@ -66,9 +66,15 @@ const updateUser = async (userId: string, payload: Partial<Iuser>, decodedToken:
 
     return newUpdatedUser
 }
-
+const getSingleUser = async (id: string) => {
+    const user = await User.findById(id);
+    return {
+        data: user
+    }
+}
 export const UserServices = {
     createUser,
     updateUser,
-    getAllUsers
+    getAllUsers,
+    getSingleUser
 }
