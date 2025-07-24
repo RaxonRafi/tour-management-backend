@@ -9,11 +9,7 @@ import { Tour } from "../tour/tour.model";
 import { User } from "../user/user.model";
 import { BOOKING_STATUS, IBooking } from "./booking.interface";
 import { Booking } from "./booking.model";
-
-
-const getTransactionId=()=>{
-    return `tran_${Date.now()}_${Math.floor(Math.random() * 1000)}`
-}
+import { getTransactionId } from "../../utils/getTransactionId";
 
 
 
@@ -34,7 +30,8 @@ const createBooking = async (payload: Partial<IBooking>, userId: string) => {
             
         }
 
-        const ammount = Number(tour.costFrom) * Number(payload.guestCount!)
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        const amount = Number(tour.costFrom) * Number(payload.guestCount!)
 
         const booking = await Booking.create([{
             user: userId,
@@ -56,10 +53,10 @@ const createBooking = async (payload: Partial<IBooking>, userId: string) => {
         .populate("tour", "title costFrom")
         .populate("payment");
 
-                const userAddress = (updatedBooking?.user as any).address
-        const userEmail = (updatedBooking?.user as any).email
-        const userPhoneNumber = (updatedBooking?.user as any).phone
-        const userName = (updatedBooking?.user as any).name
+                const userAddress = (updateBooking?.user as any).address
+        const userEmail = (updateBooking?.user as any).email
+        const userPhoneNumber = (updateBooking?.user as any).phone
+        const userName = (updateBooking?.user as any).name
 
         const sslPayload: ISSLCommerz = {
             address: userAddress,
@@ -76,7 +73,7 @@ const createBooking = async (payload: Partial<IBooking>, userId: string) => {
         session.endSession()
         return {
             paymentUrl: sslPayment.GatewayPageURL,
-            booking: updatedBooking
+            booking: updateBooking
         }
 
     } catch (error) {

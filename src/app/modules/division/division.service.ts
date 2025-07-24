@@ -1,3 +1,4 @@
+import { deleteImageFromCloudinary } from "../../config/cloudinary.config";
 import { QueryBuilder } from "../../utils/QueryBuilder";
 import { divisionSearchableFields } from "./division.constant";
 import { IDivision } from "./division.interface";
@@ -45,10 +46,14 @@ const getSingleDivision = async (slug: string) => {
 
 const updateDivision = async (id: string, payload: Partial<IDivision>) => {
 
+    
+
     const existingDivision = await Division.findById(id);
     if (!existingDivision) {
         throw new Error("Division not found.");
     }
+
+
 
     const duplicateDivision = await Division.findOne({
         name: payload.name,
@@ -60,6 +65,10 @@ const updateDivision = async (id: string, payload: Partial<IDivision>) => {
     }
 
     const updatedDivision = await Division.findByIdAndUpdate(id, payload, { new: true, runValidators: true })
+
+    if(payload.thumbnail && existingDivision.thumbnail){
+        await deleteImageFromCloudinary(existingDivision.thumbnail)
+    }
 
     return updatedDivision
 
