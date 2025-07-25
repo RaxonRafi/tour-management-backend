@@ -25,6 +25,9 @@ export const checkAuth = (...authRoles: string[]) => async (req:Request,res:Resp
         if (isUserExist.isDeleted) {
             throw new AppError(httpStatus.BAD_REQUEST, "User is deleted")
         }
+        if (isUserExist.isVerified) {
+            throw new AppError(httpStatus.BAD_REQUEST, "User is not verified")
+        }
 
     if(!authRoles.includes(verifiedToken.role)){
         throw new AppError(403,"you are not permitted to view this route!")

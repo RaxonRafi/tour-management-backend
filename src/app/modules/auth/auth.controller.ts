@@ -17,7 +17,7 @@ const credentialsLogin = catchAsync(async (req: Request, res: Response, next: Ne
     passport.authenticate("local", async(err: any, user: any, info: any)=>{
 
         if(err){
-            return next(new AppError(401, info.message))
+            return next(new AppError(err.statusCode || 401, err.message))
         }
 
         if(!user){
@@ -79,14 +79,26 @@ const logout = catchAsync(async (req: Request, res: Response, next: NextFunction
         data: null,
     })
 })
-const resetPassword = catchAsync(async (req: Request, res: Response, next: NextFunction)=>{
+const changePassword = catchAsync(async (req: Request, res: Response, next: NextFunction)=>{
     
     const oldPassword = req.body.oldPassword
-    const newPassword = req.body.password;
+    const newPassword = req.body.newPassword;
     const decodedToken = req.user
-    const newUpdatedPassword = await AuthServices.resetPassword(oldPassword,newPassword,decodedToken as JwtPayload);
+    await AuthServices.changePassword(oldPassword,newPassword,decodedToken as JwtPayload);
 
    
+    sendResponse(res,{
+        success: true,
+        statusCode: httpStatus.OK,
+        message: "Password Changed Successfully",
+        data: null,
+    })
+})
+const resetPassword = catchAsync(async (req: Request, res: Response, next: NextFunction)=>{
+    
+    const decodedToken = req.user
+    await AuthServices.resetPassword(req.body,decodedToken as JwtPayload);
+
     sendResponse(res,{
         success: true,
         statusCode: httpStatus.OK,
@@ -96,13 +108,10 @@ const resetPassword = catchAsync(async (req: Request, res: Response, next: NextF
 })
 const setPassword = catchAsync(async (req: Request, res: Response, next: NextFunction)=>{
     
-    const oldPassword = req.body.oldPassword
-    const newPassword = req.body.password;
     const decodedToken = req.user as JwtPayload
     const {password} = req.body
     await AuthServices.setPassword(decodedToken.userId,password);
 
-   
     sendResponse(res,{
         success: true,
         statusCode: httpStatus.OK,
@@ -110,21 +119,19 @@ const setPassword = catchAsync(async (req: Request, res: Response, next: NextFun
         data: null,
     })
 })
-const changePassword = catchAsync(async (req: Request, res: Response, next: NextFunction)=>{
+const forgotPassword = catchAsync(async (req: Request, res: Response, next: NextFunction)=>{
     
-    const oldPassword = req.body.oldPassword
-    const newPassword = req.body.password;
-    const decodedToken = req.user
-    const newUpdatedPassword = await AuthServices.resetPassword(oldPassword,newPassword,decodedToken as JwtPayload);
-
+    const {email} = req.body
+    await AuthServices.forgotPassword(email)
    
     sendResponse(res,{
         success: true,
         statusCode: httpStatus.OK,
-        message: "Password Changed Successfully",
+        message: "Email sent Successfully",
         data: null,
     })
 })
+
 const googleCallbackController = catchAsync(async (req: Request, res: Response, next: NextFunction)=>{
     let redirectTo = req.query.state ? req.query.state as string : ""
     const user = req.user;
@@ -148,5 +155,6 @@ export const AuthControllers ={
     resetPassword,
     setPassword,
     changePassword,
+    forgotPassword,
     googleCallbackController
 }

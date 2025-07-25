@@ -5,6 +5,8 @@ import bcryptjs from "bcryptjs"
 import { envVars } from "../../config/env";
 import { JwtPayload } from "jsonwebtoken";
 import httpStatus from "http-status-codes"
+import { QueryBuilder } from "../../utils/QueryBuilder";
+import { userSearchableFields } from "./user.constant";
 const createUser = async(payload: Partial<Iuser>)=>{
     const { email,password, ...rest} = payload
     const isUserExist = await User.findOne({ email })
@@ -26,14 +28,23 @@ const createUser = async(payload: Partial<Iuser>)=>{
     return user
 }
 
-const getAllUsers = async ()=>{
-    const users = await User.find({})
-    const totalUsers = await User.countDocuments()
+const getAllUsers = async (query: Record<string,string>)=>{
+
+    const queryBuilder = new QueryBuilder(User.find(),query)
+    const userData = queryBuilder
+    .filter()
+    .search(userSearchableFields)
+    .sort()
+    .fields()
+    .paginate()
+    
+    const [data,meta] = await Promise.all([
+        userData.build(),
+        queryBuilder.getMeta()
+    ])
     return{
-        data: users,
-        meta:{
-            total: totalUsers
-        }
+      data,
+      meta
     }
 }
 
@@ -67,7 +78,13 @@ const updateUser = async (userId: string, payload: Partial<Iuser>, decodedToken:
     return newUpdatedUser
 }
 const getSingleUser = async (id: string) => {
-    const user = await User.findById(id);
+    const user = await User.findById(id).select("-password");
+    return {
+        data: user
+    }
+}
+const getMe = async (userId: string) => {
+    const user = await User.findById(userId).select("-password");
     return {
         data: user
     }
@@ -76,5 +93,6 @@ export const UserServices = {
     createUser,
     updateUser,
     getAllUsers,
-    getSingleUser
+    getSingleUser,
+    getMe
 }
