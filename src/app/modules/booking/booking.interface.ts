@@ -1,5 +1,6 @@
 import { Types } from "mongoose";
 
+
 export enum BOOKING_STATUS{
     PENDING = "PENDING",
     CANCEL = "CANCEL",
@@ -13,4 +14,5 @@ export interface IBooking{
     payment?: Types.ObjectId,
     guestCount: number,
     status: BOOKING_STATUS
+    createdAt?: Date
 }
