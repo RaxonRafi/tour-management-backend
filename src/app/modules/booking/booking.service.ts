@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import httpStatus from "http-status-codes";
 import AppError from "../../errorHelpers/AppError";
+
 import { PAYMENT_STATUS } from "../payment/payment.interface";
 import { Payment } from "../payment/payment.model";
 import { ISSLCommerz } from "../sslCommerz/sslCommerz.interface";
@@ -9,25 +10,26 @@ import { Tour } from "../tour/tour.model";
 import { User } from "../user/user.model";
 import { BOOKING_STATUS, IBooking } from "./booking.interface";
 import { Booking } from "./booking.model";
-import { getTransactionId } from "../../utils/getTransactionId";
-
+import { getTransactionId } from "../../utils/getTransactionid";
 
 
 const createBooking = async (payload: Partial<IBooking>, userId: string) => {
     const transactionId = getTransactionId()
+
     const session = await Booking.startSession();
+    session.startTransaction()
+
     try {
-        const user = await User.findById(userId)
+        const user = await User.findById(userId);
 
         if (!user?.phone || !user.address) {
-            throw new AppError(httpStatus.BAD_REQUEST,"Please Update Your Profile to Book a Tour.")
+            throw new AppError(httpStatus.BAD_REQUEST, "Please Update Your Profile to Book a Tour.")
         }
 
         const tour = await Tour.findById(payload.tour).select("costFrom")
-        
+
         if (!tour?.costFrom) {
-             throw new AppError(httpStatus.BAD_REQUEST, "No Tour Cost Found!")
-            
+            throw new AppError(httpStatus.BAD_REQUEST, "No Tour Cost Found!")
         }
 
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -35,28 +37,31 @@ const createBooking = async (payload: Partial<IBooking>, userId: string) => {
 
         const booking = await Booking.create([{
             user: userId,
-            status: BOOKING_STATUS,
+            status: BOOKING_STATUS.PENDING,
             ...payload
-        }],{session})
+        }], { session })
+
         const payment = await Payment.create([{
             booking: booking[0]._id,
             status: PAYMENT_STATUS.UNPAID,
             transactionId: transactionId,
             amount: amount
-        }],{ session })
-        const updateBooking = await Booking.findByIdAndUpdate(
-            booking[0]._id,
-            {payment: payment[0]._id },
-            { new: true, runValidators: true, session }
-        )
-        .populate("user", "name email phone address")
-        .populate("tour", "title costFrom")
-        .populate("payment");
+        }], { session })
 
-                const userAddress = (updateBooking?.user as any).address
-        const userEmail = (updateBooking?.user as any).email
-        const userPhoneNumber = (updateBooking?.user as any).phone
-        const userName = (updateBooking?.user as any).name
+        const updatedBooking = await Booking
+            .findByIdAndUpdate(
+                booking[0]._id,
+                { payment: payment[0]._id },
+                { new: true, runValidators: true, session }
+            )
+            .populate("user", "name email phone address")
+            .populate("tour", "title costFrom")
+            .populate("payment");
+
+        const userAddress = (updatedBooking?.user as any).address
+        const userEmail = (updatedBooking?.user as any).email
+        const userPhoneNumber = (updatedBooking?.user as any).phone
+        const userName = (updatedBooking?.user as any).name
 
         const sslPayload: ISSLCommerz = {
             address: userAddress,
@@ -69,16 +74,18 @@ const createBooking = async (payload: Partial<IBooking>, userId: string) => {
 
         const sslPayment = await SSLService.sslPaymentInit(sslPayload)
 
-        await session.commitTransaction(); 
+        // console.log(sslPayment);
+
+        await session.commitTransaction(); //transaction
         session.endSession()
         return {
             paymentUrl: sslPayment.GatewayPageURL,
-            booking: updateBooking
+            booking: updatedBooking
         }
-
     } catch (error) {
-        await session.abortTransaction(); 
+        await session.abortTransaction(); // rollback
         session.endSession()
+        // throw new AppError(httpStatus.BAD_REQUEST, error) ❌❌
         throw error
     }
 };

@@ -50,8 +50,7 @@ const  successPayment = async (query: Record<string,string>)=>{
             { transactionId: query.transactionId }, 
             { status: PAYMENT_STATUS.PAID,}, 
             { new: true, runValidators: true, session: session })
-        .populate("tour","title")
-        .populate("user","name email")
+
 
        const updatedBooking = await Booking
             .findByIdAndUpdate(
@@ -59,6 +58,8 @@ const  successPayment = async (query: Record<string,string>)=>{
                 { status: BOOKING_STATUS.COMPLETE },
                 {new: true, runValidators: true, session }
             )
+            .populate("tour", "title")
+            .populate("user", "name email")
         if(!updatedBooking){
             throw new AppError(401,"Booking not found!")
         }
